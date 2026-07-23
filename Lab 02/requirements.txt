@@ -1,0 +1,31 @@
+# Deep Learning Lab Experiment 2: MLP for Fashion-MNIST Classification
+# Python 3.8+
+
+# Core Deep Learning
+tensorflow>=2.10.0
+keras>=3.2.0
+
+# Machine Learning & Preprocessing
+scikit-learn==1.5.2
+scikeras==0.13.0
+numpy>=1.19.5
+scipy>=1.6.0
+
+# Data Handling
+pandas>=1.1.0
+
+# Visualization
+matplotlib>=3.3.0
+seaborn>=0.11.0
+
+# Utilities
+joblib>=1.2.0
+threadpoolctl>=3.1.0
+
+# Jupyter Environment
+jupyter>=1.0.0
+notebook>=6.0.0
+ipython>=7.0.0
+
+# Additional (optional but recommended)
+tqdm>=4.50.0
