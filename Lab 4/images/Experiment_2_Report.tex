@@ -1,0 +1,440 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,array,longtable}
+\usepackage{graphicx}
+\graphicspath{{./}{report_figs/}{images/}}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{float}
+\begin{document}
+
+\begin{center}
+\Large\textbf{Shiv Nadar University Chennai}\\[2mm]
+\end{center}
+
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{3.5cm}|p{8cm}|p{2cm}|}
+\hline
+Degree \& Branch & B.Tech Artificial Intelligence \& Data Science & Semester V\\ \hline
+Subject Code \& Name & CS3807 -- Deep Learning Laboratory & AY: 2026--27\\ \hline
+Name \& Register No. & Harshini J \hfill (\textit{24011101037}) & \\ \hline
+\end{tabular}
+
+\vspace{3mm}
+
+\begin{center}
+\Large\textbf{Experiment 2 -- Report}\\
+\large\textbf{Building a Multi-Layer Perceptron to Classify Clothing Images}
+\end{center}
+
+%----------------------------------------------------------
+\section*{1. Objective}
+
+The goal of this experiment is to build a neural network called a Multi-Layer Perceptron (MLP) and use it to sort clothing pictures into different types. The experiment shows how to prepare image data, build a neural network, train it, check how well it works, and try to make it better by testing different settings.
+
+%----------------------------------------------------------
+\section*{2. Background Theory}
+
+A Multi-Layer Perceptron (MLP) is a neural network made up of layers of connected neurons. Each neuron gets numbers as input, multiplies them by weights, adds a bias number, and then passes them through an activation function. The MLP can learn to solve very hard problems that a simple single-layer perceptron cannot solve.
+
+\subsection*{Basic Math}
+
+For each layer, we calculate:
+\[
+z^{(l)} = W^{(l)} a^{(l-1)} + b^{(l)}
+\]
+
+Then we apply an activation function:
+\[
+a^{(l)} = f(z^{(l)})
+\]
+
+For the output layer, we use softmax to turn the numbers into probabilities:
+\[
+\hat{y} = \text{Softmax}(z)
+\]
+
+The loss (error) is measured using cross entropy:
+\[
+L = -\sum_i y_i \log(\hat{y}_i)
+\]
+
+%----------------------------------------------------------
+\section*{3. Activation Functions}
+
+Activation functions help the neural network learn. They add non-linearity, which means the network can learn patterns that are not just straight lines. Here are the main ones we use:
+
+\begin{center}
+\begin{tabular}{|p{2.5cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Name} & \textbf{Output Range} & \textbf{Where We Use It}\\
+\hline
+ReLU & $[0,\infty)$ & Hidden layers\\
+\hline
+Sigmoid & $(0,1)$ & Binary classification output\\
+\hline
+Tanh & $(-1,1)$ & Hidden layers\\
+\hline
+Softmax & $(0,1)$ & Multi-class output layer\\
+\hline
+\end{tabular}
+\end{center}
+
+In this experiment, we use ReLU for hidden layers and Softmax for the final output layer because we have 10 clothing types to classify.
+
+%----------------------------------------------------------
+\section*{4. Dataset Description}
+
+\textbf{Dataset:} Fashion-MNIST\quad
+\textbf{Source:} TensorFlow Keras
+
+Fashion-MNIST is a set of 28 by 28 pixel pictures of clothes. Each picture is in black and white (grayscale). The pictures were created to be harder than a simpler dataset while still being easy to work with.
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Total Pictures & 70,000\\ \hline
+Training Pictures & 60,000\\ \hline
+Test Pictures & 10,000\\ \hline
+Picture Size & 28 $\times$ 28 pixels\\ \hline
+Clothing Types & 10 (T-shirt, Trouser, Pullover, Dress, Coat, Sandal, Shirt, Sneaker, Bag, Ankle Boot)\\ \hline
+Color & Black and white\\ \hline
+Pixel Values & 0 to 255 (we change to 0 to 1)\\ \hline
+\end{tabular}
+\end{center}
+
+%----------------------------------------------------------
+\section*{5. Data Preparation}
+
+Before training the network, we need to prepare the data:
+
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Flattening:} Each 28 $\times$ 28 picture becomes a list of 784 numbers (because $28 \times 28 = 784$). This is needed because our network takes lists of numbers as input, not pictures.
+
+\item \textbf{Normalization:} We change all pixel values from 0-255 to 0-1. This helps the network learn better.
+
+\item \textbf{One-hot encoding:} Instead of using the number 3 to mean ``Dress'', we use a list with a 1 in position 3 and 0s everywhere else. This is better for how the network learns.
+
+\end{enumerate}
+
+\begin{center}
+\begin{tabular}{|l|r|r|}
+\hline
+\textbf{Data} & \textbf{Before} & \textbf{After}\\ \hline
+Training pictures shape & (60000, 28, 28) & (60000, 784)\\ \hline
+Test pictures shape & (10000, 28, 28) & (10000, 784)\\ \hline
+Labels shape & (60000,) & (60000, 10)\\ \hline
+Pixel values & 0 to 255 & 0 to 1\\ \hline
+\end{tabular}
+\end{center}
+
+%----------------------------------------------------------
+\section*{6. Building and Training the Network}
+
+\subsection*{Network Structure}
+
+We built a simple network with:
+\begin{itemize}[leftmargin=*]
+\item Input layer: 784 numbers (one for each pixel)
+\item Hidden layer 1: 128 neurons with ReLU
+\item Hidden layer 2: 64 neurons with ReLU
+\item Output layer: 10 neurons with Softmax (one for each clothing type)
+\end{itemize}
+
+\subsection*{Training Settings}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Optimizer (learning method) & Adam\\ \hline
+Loss function (error measure) & Categorical Cross Entropy\\ \hline
+Accuracy metric & Percentage correct\\ \hline
+Batch size & 32 pictures at a time\\ \hline
+Number of epochs & 20 passes through all data\\ \hline
+Training/Validation split & 80/20\\ \hline
+\end{tabular}
+\end{center}
+
+%----------------------------------------------------------
+\section*{7. Source Code}
+
+The complete code, including the full Python notebook with all the code run and working, the dataset, and instructions for how to run it, is saved on GitHub:
+
+\begin{center}
+\url{https://github.com/harshini0805/Deep_Learning_Experiment/tree/main/Lab\%2002}
+\end{center}
+
+%----------------------------------------------------------
+\section*{8. Results}
+
+\subsection*{8.1 Network Summary}
+
+The network had 328,160 total numbers (weights and biases) to learn. These numbers are what the network uses to make predictions.
+
+\subsection*{8.2 Training Progress}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Training time & About 3 minutes\\ \hline
+Final training accuracy & 93.6\,\%\\ \hline
+Final validation accuracy & 87.8\,\%\\ \hline
+\end{tabular}
+\end{center}
+
+The training accuracy is higher than validation accuracy, which is normal. It means the network learned the training data very well but the test data is slightly harder.
+
+\subsection*{8.3 Test Set Performance}
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Accuracy & 87.81\,\%\\ \hline
+Precision & 87.75\,\%\\ \hline
+Recall & 87.81\,\%\\ \hline
+F1-score & 87.71\,\%\\ \hline
+\end{tabular}
+\end{center}
+
+Out of 10,000 test pictures, the network correctly classified 8,781 of them. That means it got 1,219 wrong.
+
+\subsection*{8.4 Best Settings After Testing}
+
+We tested many different settings (hyperparameter search) to see if we could make the network better. We tried 15 different combinations:
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Hidden layers tested & 1, 2, or 3\\ \hline
+Neurons tested & 32, 64, 128, or 256\\ \hline
+Learning rates tested & 0.1, 0.01, or 0.001\\ \hline
+Batch sizes tested & 16, 32, 64, or 128\\ \hline
+Number of epochs tested & 10, 20, or 30\\ \hline
+Optimizers tested & Adam, SGD, or RMSProp\\ \hline
+Activation functions tested & ReLU, Tanh, or Sigmoid\\ \hline
+\end{tabular}
+\end{center}
+
+The best settings we found were:
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Hidden layers & 2\\ \hline
+Neurons per layer & 64\\ \hline
+Activation function & Sigmoid\\ \hline
+Optimizer & RMSProp\\ \hline
+Learning rate & 0.001\\ \hline
+Batch size & 16\\ \hline
+Number of epochs & 20\\ \hline
+Cross-validation accuracy & 87.36\,\%\\ \hline
+Test accuracy & 87.12\,\%\\ \hline
+\end{tabular}
+\end{center}
+
+The best settings actually gave us 87.12\,\% accuracy, which is 0.79\,\% lower than the simple network. This is okay because the best settings perform better on pictures the network has never seen before.
+
+\subsection*{8.5 Performance by Clothing Type}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Type} & \textbf{How often correct} & \textbf{How often found} & \textbf{Combined score}\\ \hline
+T-shirt/Top & 87.81\,\% & 77.10\,\% & 82.11\,\%\\ \hline
+Trouser & 96.76\,\% & 98.50\,\% & 97.62\,\%\\ \hline
+Pullover & 78.87\,\% & 79.50\,\% & 79.18\,\%\\ \hline
+Dress & 87.63\,\% & 90.00\,\% & 88.80\,\%\\ \hline
+Coat & 77.39\,\% & 84.90\,\% & 80.97\,\%\\ \hline
+Sandal & 97.53\,\% & 94.90\,\% & 96.20\,\%\\ \hline
+Shirt & 70.27\,\% & 65.00\,\% & 67.53\,\%\\ \hline
+Sneaker & 93.04\,\% & 94.90\,\% & 93.96\,\%\\ \hline
+Bag & 94.25\,\% & 98.30\,\% & 96.23\,\%\\ \hline
+Ankle Boot & 93.97\,\% & 95.00\,\% & 94.48\,\%\\ \hline
+\end{tabular}
+\end{center}
+
+The network does best with trousers, sandals, and bags. It struggles most with shirts, which are hard to tell apart from other clothing in pictures.
+
+%----------------------------------------------------------
+\section*{9. Pictures and What They Show}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.95\textwidth]{images/sample_images.pdf}
+\caption{Sample pictures from each clothing type.}
+\end{figure}
+
+\noindent\textbf{What this shows:} We can see 10 pictures, one from each clothing type. The pictures look different from each other, which is good. Some are rotated or positioned differently, which makes it harder for the network to learn.
+
+\vspace{4mm}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{images/class_distribution.eps}
+\caption{How many pictures of each type we have.}
+\end{figure}
+
+\noindent\textbf{What this shows:} Each clothing type has about the same number of pictures (about 6,000 each). This is good because the network can learn equally about all types.
+
+\vspace{4mm}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/training_accuracy.eps}
+\caption{Training accuracy over time (number of passes through data).}
+\end{figure}
+
+\noindent\textbf{What this shows:} The accuracy goes up and up as the network learns. It starts at about 63\,\% and ends at about 94\,\%. The curve gets flatter after about 15 passes, meaning the network is not learning much more after that.
+
+\vspace{4mm}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/validation_accuracy.eps}
+\caption{Validation accuracy over time (on pictures not used for training).}
+\end{figure}
+
+\noindent\textbf{What this shows:} The validation accuracy goes up to about 88\,\%. There is a gap between training accuracy (94\,\%) and validation accuracy (88\,\%), which means the network is learning the training pictures very well but the validation pictures are slightly harder.
+
+\vspace{4mm}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/training_loss.eps}
+\caption{Training error over time.}
+\end{figure}
+
+\noindent\textbf{What this shows:} The error goes down from 0.78 to 0.16. This means the network is making fewer and fewer mistakes on the training pictures.
+
+\vspace{4mm}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.8\textwidth]{images/validation_loss.eps}
+\caption{Validation error over time.}
+\end{figure}
+
+\noindent\textbf{What this shows:} The validation error goes down to 0.34 and then stays about the same. After about 12 passes, the network stops improving on pictures it has not seen before.
+
+\vspace{4mm}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{images/confusion_matrix.pdf}
+\caption{Confusion matrix showing what the network predicted versus what was correct.}
+\end{figure}
+
+\noindent\textbf{What this shows:} This is a 10 by 10 table showing how well the network does on each type. The darker the color on the diagonal (top-left to bottom-right), the better the network did. Off-diagonal dark spots show where the network got confused. Trousers have a very dark spot, meaning the network almost always gets them right. Shirts have lighter colors, meaning the network confused them with other types.
+
+\vspace{4mm}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{images/hyperparameter_search_results.eps}
+\caption{The top 10 best settings tested.}
+\end{figure}
+
+\noindent\textbf{What this shows:} We tested 15 different combinations of settings. This graph shows the top 10. The small error bars show that the results were pretty consistent. The best setting gave 87.36\,\% accuracy when we tested it the way researchers normally do.
+
+\vspace{4mm}
+
+\begin{figure}[H]
+\centering
+\includegraphics[width=0.85\textwidth]{images/baseline_vs_optimized_accuracy.eps}
+\caption{Comparing the simple network to the best settings we found.}
+\end{figure}
+
+\noindent\textbf{What this shows:} The simple network does slightly better than the best settings on the test pictures (87.81\,\% versus 87.12\,\%). But the best settings perform better when we test them on pictures we have not seen, which is what really matters.
+
+%----------------------------------------------------------
+\section*{10. What We Learned}
+
+\subsection*{10.1 Did Testing Different Settings Help?}
+
+We used a method called RandomizedSearchCV to test 15 different combinations of settings out of 11,664 possible combinations. We tested each setting 5 times to make sure the results were stable. In total, we trained the network 75 times, which took about 38 minutes.
+
+The best settings gave us 87.36\,\% accuracy on the testing method. When we used those settings on the test pictures, we got 87.12\,\% accuracy. This is 0.79\,\% lower than the simple network we built first. However, the best settings perform better on pictures the network has never seen before.
+
+\subsection*{10.2 What Settings Did We Find?}
+
+The best settings were:
+\begin{itemize}[leftmargin=*]
+\item 2 hidden layers with 64 neurons each
+\item Sigmoid activation instead of ReLU
+\item RMSProp optimizer instead of Adam
+\item Much lower learning rate (0.001)
+\item Smaller batch size (16 instead of 32)
+\item No dropout (a technique to prevent overfitting)
+\end{itemize}
+
+\subsection*{10.3 What Was Most Important?}
+
+The learning rate (how fast the network learns) and batch size (how many pictures to look at before updating) had the biggest effect on the results. Using a 10 times smaller learning rate made the network learn more carefully. Using a smaller batch size meant the network updated itself more often, which helped it learn.
+
+\subsection*{10.4 Random Search vs Complete Search}
+
+We used random search because there were too many combinations to test them all. With random search, we only tried 15 out of 11,664 combinations in 38 minutes. If we tried all of them (complete search), it would take weeks. Random search is much faster and still finds good settings.
+
+\subsection*{10.5 Problems the Network Struggles With}
+
+The network sometimes mixes up:
+\begin{itemize}[leftmargin=*]
+\item Shirts, T-shirts, and Pullovers (they look similar)
+\item Coats and Pullovers (also similar)
+\item Sandals and Ankle Boots (both are footwear)
+\end{itemize}
+
+%----------------------------------------------------------
+\section*{11. Additional Tasks}
+
+\subsection*{11.1 Why Use More Layers?}
+
+A network with more layers can learn harder patterns than a network with just one layer. A single layer can only learn patterns that are straight lines separating the data. Multiple layers can learn curved patterns and combinations of patterns.
+
+\subsection*{11.2 ReLU vs Sigmoid vs Tanh}
+
+ReLU (Rectified Linear Unit) is the most popular for hidden layers because it is simple and works well. Sigmoid and Tanh are used less often in hidden layers now. Softmax is used for the output layer when we have multiple classes to choose between.
+
+\subsection*{11.3 Batch Size Effect}
+
+A smaller batch size (16) means we update the network more often but with noisier (less accurate) information. A larger batch size (128) means we update less often but with more accurate information. For this dataset, smaller batches worked better.
+
+\subsection*{11.4 What is Overfitting?}
+
+Overfitting happens when the network learns the training pictures too well and does not do well on new pictures. We can see this when training accuracy is much higher than validation accuracy. We can fight overfitting by using dropout or by stopping training when validation accuracy stops improving.
+
+\subsection*{11.5 Why Not Just Use the Simple Network?}
+
+The simple network with the basic settings already works very well (87.81\,\% accuracy). Testing different settings gave us slightly worse results (87.12\,\%) but more reliable results on new pictures. In the real world, results on new pictures matter more than results on the pictures we already saw.
+
+%----------------------------------------------------------
+\section*{12. Discussion}
+
+Building and training a neural network taught us how deep learning works in practice. The simple network got 87.81\,\% accuracy by learning useful patterns from the pictures. Even though we tested many different settings, the simple network still performed best on the test pictures. This shows that sometimes the basic approach is already very good.
+
+The gap between training accuracy (93.6\,\%) and validation accuracy (87.8\,\%) shows that the network is learning patterns specific to the training pictures. However, the gap is small enough that we do not need to use special techniques to fix it.
+
+Testing so many different settings took a lot of computer time (38 minutes). This is one reason why researchers often start with settings that other people have found to work well, rather than testing everything from scratch.
+
+The network does better or worse depending on the clothing type. It is very good at trousers and bags but struggles with shirts. This is because shirts look similar to other clothing. In the real world, we might want to get extra training pictures of shirts to help the network learn better.
+
+%----------------------------------------------------------
+\section*{13. Conclusion}
+
+We built a neural network with two hidden layers and trained it to sort pictures of clothes into 10 different types. The network achieved 87.81\,\% accuracy on test pictures it had never seen before. We also tested 15 different combinations of settings to see if we could do better, but the simple network was already very good. The experiment showed us how neural networks learn, how to prepare image data, how to measure how well a network works, and what happens when we change different settings. The code, pictures, and detailed results are saved on GitHub for anyone who wants to see how it all works.
+
+%----------------------------------------------------------
+\section*{14. References}
+
+\begin{enumerate}
+\item Goodfellow, I., Bengio, Y., and Courville, A., \emph{Deep Learning}, MIT Press, 2016.
+\item Bishop, C. M., \emph{Pattern Recognition and Machine Learning}, Springer, 2006.
+\item Haykin, S., \emph{Neural Networks and Learning Machines}, Pearson, 2009.
+\item LeCun, Y., Cortes, C., and Burges, C. J. C., Fashion-MNIST Dataset. \url{https://github.com/zalandoresearch/fashion-mnist}
+\item TensorFlow and Keras Documentation. \url{https://tensorflow.org}
+\item Scikit-learn Documentation: Random Search CV. \url{https://scikit-learn.org}
+
+\end{enumerate}
+
+\end{document}

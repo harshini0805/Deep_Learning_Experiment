@@ -1,0 +1,6 @@
+Model,Parameters,Accuracy (%),Training Time (min)
+LeNet-5,83126,57.37,2.66
+LeNet-5,83126,58.42,3.21
+AlexNet,8576906,72.63,139.47
+GoogleNet,1499634,74.09,46.29
+VGG16,14848586,88.25,760.91

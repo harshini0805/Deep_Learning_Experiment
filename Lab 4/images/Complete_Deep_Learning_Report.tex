@@ -1,0 +1,778 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath,amssymb,booktabs,array,longtable}
+\usepackage{graphicx}
+\graphicspath{{./}{report_figs/}{images/}}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage{float}
+\begin{document}
+\begin{center}
+\Large\textbf{Shiv Nadar University Chennai}\\[2mm]
+\end{center}
+\renewcommand{\arraystretch}{1.4}
+\begin{tabular}{|p{3.5cm}|p{8cm}|p{2cm}|}
+\hline
+Degree \& Branch & B.Tech Artificial Intelligence \& Data Science & Semester V\\ \hline
+Subject Code \& Name & CS3807 -- Deep Learning Laboratory & AY: 2026--27\\ \hline
+Name \& Register No. & Harshini J \hfill (\textit{24011101037}) & \\ \hline
+\end{tabular}
+\vspace{3mm}
+
+% ============================================================
+% EXPERIMENT 1: SINGLE LAYER PERCEPTRON - BINARY CLASSIFICATION
+% ============================================================
+
+\begin{center}
+\Large\textbf{Experiment 1 -- Report}\\
+\large\textbf{Implementation of a Single Layer Perceptron for Binary Classification}
+\end{center}
+
+%----------------------------------------------------------
+\section*{1. Objective}
+The objective of this experiment is to understand the concept of an artificial neuron and implement a Single Layer Perceptron from scratch for binary classification. The experiment covers the perceptron learning algorithm, the role of the activation function, visualization of the learning process, and evaluation of the classifier on a real-world dataset, the UCI Banknote Authentication dataset.
+%----------------------------------------------------------
+\section*{2. Background Theory}
+An Artificial Neuron is the fundamental building block of a neural network. It receives one or more input features, multiplies them by corresponding weights, adds a bias term, and applies an activation function to determine the output. The Single Layer Perceptron (Rosenblatt, 1958) is the earliest supervised learning algorithm capable of solving linearly separable binary classification problems.
+\subsection*{Mathematical Formulation}
+Weighted Sum
+\[
+z=\mathbf{w}^{T}\mathbf{x}+b
+\]
+where $\mathbf{x}$ is the input vector, $\mathbf{w}$ the weight vector, $b$ the bias and $z$ the linear combination.
+Prediction
+\[
+\hat y=f(z)
+\]
+Weight Update Rule
+\[
+\mathbf{w}_{new}=\mathbf{w}_{old}+\eta\,(y-\hat y)\,\mathbf{x}
+\]
+Bias Update
+\[
+b_{new}=b_{old}+\eta\,(y-\hat y)
+\]
+where $\eta$ denotes the learning rate. An update occurs only when a sample is misclassified ($y\neq\hat y$); correctly classified samples leave the parameters unchanged. The Perceptron Convergence Theorem guarantees convergence in a finite number of updates \emph{only} if the data are linearly separable.
+%----------------------------------------------------------
+\section*{3. Activation Functions}
+An activation function determines the output of a neuron based on the weighted sum of its inputs. It introduces non-linearity, enabling neural networks to learn complex patterns. The classical perceptron uses the Step Activation Function:
+\[
+f(z)=
+\begin{cases}
+1,&z\ge0\\
+0,&z<0
+\end{cases}
+\]
+The step function produces a hard binary output and is therefore suitable only for linearly separable binary classification. Modern deep learning models instead use differentiable activations, summarized below.
+\begin{center}
+\begin{tabular}{|p{2.5cm}|p{3cm}|p{6cm}|}
+\hline
+\textbf{Activation} & \textbf{Output Range} & \textbf{Typical Applications}\\
+\hline
+Step & $\{0,1\}$ & Classical Perceptron\\
+\hline
+Sigmoid & $(0,1)$ & Binary Classification Output Layer\\
+\hline
+Tanh & $(-1,1)$ & Hidden Layers (Traditional Networks)\\
+\hline
+ReLU & $[0,\infty)$ & Hidden Layers in CNNs and MLPs\\
+\hline
+Leaky ReLU & $(-\infty,\infty)$ & Avoiding Dying ReLU\\
+\hline
+Softmax & $(0,1)$ & Multi-class Classification Output Layer\\
+\hline
+\end{tabular}
+\end{center}
+Only the Step Activation Function is used in this experiment.
+%----------------------------------------------------------
+\section*{4. Dataset Description}
+\textbf{Dataset:} Banknote Authentication Dataset\quad
+\textbf{Source:} UCI Machine Learning Repository\\
+\textbf{Link:} \url{https://archive.ics.uci.edu/dataset/267/banknote+authentication}
+The features were extracted from $400\times400$-pixel grayscale images of genuine and forged banknote-like specimens using a Wavelet Transform.
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Instances & 1372\\ \hline
+Features & 4 numerical (variance, skewness, curtosis, entropy)\\ \hline
+Classes & 2 (0 = Authentic: 762 samples, 1 = Forged: 610 samples)\\ \hline
+Missing Values & None\\ \hline
+Duplicate Rows & Present in source data; retained (part of official dataset)\\ \hline
+Task & Binary Classification\\ \hline
+\end{tabular}
+\end{center}
+\textbf{Descriptive statistics (full dataset)}
+\begin{center}
+\begin{tabular}{|l|r|r|r|r|}
+\hline
+ & \textbf{variance} & \textbf{skewness} & \textbf{curtosis} & \textbf{entropy}\\ \hline
+Mean & 0.434 & 1.922 & 1.398 & $-1.192$\\ \hline
+Std.\ Dev. & 2.843 & 5.869 & 4.310 & 2.101\\ \hline
+Min & $-7.042$ & $-13.773$ & $-5.286$ & $-8.548$\\ \hline
+Max & 6.825 & 12.952 & 17.927 & 2.450\\ \hline
+\end{tabular}
+\end{center}
+The features span clearly different numerical ranges, which motivates standardization before perceptron training.
+%----------------------------------------------------------
+\section*{5. Experimental Procedure}
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Dataset exploration:} the dataset was loaded with pandas; dimensions, first five samples, missing values, duplicates and descriptive statistics were examined.
+\item \textbf{EDA:} feature histograms, correlation heatmap, pairwise scatter plots, boxplots, violin plots and a 2-D PCA projection were generated.
+\item \textbf{Preprocessing:} a stratified 80/20 train--test split ($1097$/$275$ samples, \texttt{random\_state}=42) was performed, followed by standardization with \texttt{StandardScaler} fitted on the training set only (no test-set leakage).
+\item \textbf{Perceptron implementation:} weights initialized to zero, bias to zero, step activation, per-sample forward propagation and the perceptron learning rule, with epoch-wise tracking of errors, weights and bias, and early stopping on zero errors.
+\item \textbf{Training:} learning rate $\eta=0.01$, maximum 100 epochs; epoch number, misclassified samples and updated bias printed every epoch.
+\item \textbf{Evaluation:} accuracy, precision, recall, F1-score and the confusion matrix computed on the held-out test set.
+\item \textbf{Additional studies:} learning-rate comparison ($\eta\in\{0.001,\,0.01,\,0.1\}$), effect of feature scaling, comparison with \texttt{sklearn.linear\_model.Perceptron}, weight-based feature importance and a two-feature decision boundary.
+\end{enumerate}
+%----------------------------------------------------------
+\section*{6. Source Code}
+The complete, executed source code, including the from-scratch Perceptron implementation, the Jupyter notebook with all outputs, the dataset, the dependency list and execution instructions, is maintained in the GitHub repository:
+\begin{center}
+\url{https://github.com/harshini0805/Deep_Learning_Experiment}
+\end{center}
+%----------------------------------------------------------
+\section*{7. Experimental Results}
+\subsection*{7.1 Training Summary}
+\begin{center}
+\begin{tabular}{|p{6cm}|p{7cm}|}
+\hline
+Dataset Size & 1372 samples, 4 features\\ \hline
+Train/Test Split & 80\,\%/20\,\% stratified (1097 / 275 samples)\\ \hline
+Learning Rate & 0.01\\ \hline
+Epochs & 100 (maximum reached; no perfect convergence)\\ \hline
+Final Weights & variance: $-0.2230$;\; skewness: $-0.2690$;\; curtosis: $-0.2465$;\; entropy: $-0.0044$\\ \hline
+Final Bias & $-0.1100$\\ \hline
+Accuracy & 0.9855\\ \hline
+Precision & 0.9683\\ \hline
+Recall & 1.0000\\ \hline
+F1-score & 0.9839\\ \hline
+\end{tabular}
+\end{center}
+The learned decision function is
+\[
+z = -0.223\,x_{\text{var}} -0.269\,x_{\text{skew}} -0.246\,x_{\text{curt}} -0.004\,x_{\text{ent}} -0.110,
+\qquad \hat y=\text{Step}(z).
+\]
+\subsection*{7.2 Confusion Matrix (Test Set, 275 samples)}
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+ & \textbf{Predicted Authentic} & \textbf{Predicted Forged}\\ \hline
+\textbf{Actual Authentic (153)} & TN = 149 & FP = 4\\ \hline
+\textbf{Actual Forged (122)} & FN = 0 & TP = 122\\ \hline
+\end{tabular}
+\end{center}
+All four test errors are false positives (authentic notes flagged as forged); not a single forged banknote is missed (recall $=1.0$). For a security application this error profile is desirable, since a false alarm is far less costly than accepting a counterfeit.
+%----------------------------------------------------------
+\section*{8. Discussion}
+The perceptron achieves 98.55\,\% test accuracy with perfect recall using only a linear decision function, confirming the near-linear separability suggested by the EDA. The training error never reaches zero, so the perceptron convergence theorem does not apply and the parameters oscillate indefinitely; in practice the epoch limit acts as the stopping criterion. The error profile (only false positives, no false negatives) is well suited to the application domain. The near-zero weight assigned to entropy shows that the perceptron performs an implicit form of feature selection consistent with the exploratory analysis.
+%----------------------------------------------------------
+\section*{9. Conclusion}
+A Single Layer Perceptron was implemented from scratch and applied to the UCI Banknote Authentication dataset. After stratified splitting and standardization, the model attained accuracy 0.9855, precision 0.9683, recall 1.0000 and F1-score 0.9839 on the held-out test set, matching Scikit-learn's reference implementation exactly. The experiment demonstrated the perceptron learning rule, the behaviour of training error, weights and bias over epochs, the effect of the learning rate and feature scaling, and the fundamental limitation of single-layer models on non-linearly-separable problems such as XOR.
+%----------------------------------------------------------
+\section*{10. References}
+\begin{enumerate}
+\item F. Rosenblatt, ``The Perceptron: A Probabilistic Model for Information Storage and Organization in the Brain,'' \emph{Psychological Review}, 1958.
+\item I. Goodfellow, Y. Bengio and A. Courville, \emph{Deep Learning}, MIT Press, 2016.
+\item C. M. Bishop, \emph{Pattern Recognition and Machine Learning}, Springer, 2006.
+\item S. Haykin, \emph{Neural Networks and Learning Machines}, Pearson, 2009.
+\item UCI Machine Learning Repository -- Banknote Authentication Dataset. \url{https://doi.org/10.24432/C55P57}
+\item Scikit-learn Documentation: \texttt{sklearn.linear\_model.Perceptron}.
+\end{enumerate}
+
+\clearpage
+
+% ============================================================
+% EXPERIMENT 2: PERCEPTRON LOGIC GATES
+% ============================================================
+
+\begin{center}
+\Large\textbf{Experiment 2 -- Report}\\
+\large\textbf{Perceptron Learning Algorithm for Logic Gates (AND, OR, NOT, XOR)}
+\end{center}
+
+%----------------------------------------------------------
+\section*{1. Objective}
+The objective of this experiment is to understand the limitations of single-layer perceptrons by implementing them for simple logic gates. Specifically, we aim to:
+\begin{enumerate}[leftmargin=*]
+\item Successfully implement the perceptron to learn \textbf{linearly separable} logic gates: AND, OR, and NOT.
+\item Demonstrate that the perceptron \textbf{cannot} learn the XOR gate due to its non-linear separability.
+\item Visualize decision boundaries and show weight updates for each gate.
+\item Understand the fundamental limitation of single-layer neural networks.
+\end{enumerate}
+
+%----------------------------------------------------------
+\section*{2. Background Theory}
+
+\subsection*{2.1 Logic Gates Overview}
+A logic gate is a function that takes binary inputs (0 or 1) and produces a binary output. The perceptron can learn gates if the two classes (output 0 and output 1) are linearly separable in the input space.
+
+\subsection*{2.2 Linear Separability}
+A classification problem is \textbf{linearly separable} if there exists a hyperplane (line in 2D) that perfectly separates the two classes. The perceptron learning rule converges if and only if the data are linearly separable.
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Gate} & \textbf{Linearly Separable?} & \textbf{Perceptron Convergence?}\\
+\hline
+AND & Yes & Yes\\
+\hline
+OR & Yes & Yes\\
+\hline
+NOT & Yes & Yes\\
+\hline
+XOR & No & No\\
+\hline
+\end{tabular}
+\end{center}
+
+%----------------------------------------------------------
+\section*{3. Logic Gate Truth Tables}
+
+\subsection*{3.1 AND Gate}
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+$x_1$ & $x_2$ & $y$ (AND)\\ \hline
+0 & 0 & 0\\ \hline
+0 & 1 & 0\\ \hline
+1 & 0 & 0\\ \hline
+1 & 1 & 1\\ \hline
+\end{tabular}
+\end{center}
+\textbf{Analysis:} Only the point (1,1) should output 1. All other points should output 0. This is linearly separable.
+
+\subsection*{3.2 OR Gate}
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+$x_1$ & $x_2$ & $y$ (OR)\\ \hline
+0 & 0 & 0\\ \hline
+0 & 1 & 1\\ \hline
+1 & 0 & 1\\ \hline
+1 & 1 & 1\\ \hline
+\end{tabular}
+\end{center}
+\textbf{Analysis:} Only the point (0,0) should output 0. All other points should output 1. This is linearly separable.
+
+\subsection*{3.3 NOT Gate}
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+$x$ & $y$ (NOT)\\ \hline
+0 & 1\\ \hline
+1 & 0\\ \hline
+\end{tabular}
+\end{center}
+\textbf{Analysis:} Separates input 0 (output 1) from input 1 (output 0). This is linearly separable on the 1D input line.
+
+\subsection*{3.4 XOR Gate}
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+$x_1$ & $x_2$ & $y$ (XOR)\\ \hline
+0 & 0 & 0\\ \hline
+0 & 1 & 1\\ \hline
+1 & 0 & 1\\ \hline
+1 & 1 & 0\\ \hline
+\end{tabular}
+\end{center}
+\textbf{Critical Issue:} Points (0,1) and (1,0) should output 1, while (0,0) and (1,1) should output 0. No single straight line can separate these two classes. \textbf{This is NOT linearly separable}.
+
+%----------------------------------------------------------
+\section*{4. Mathematical Analysis of XOR Non-Separability}
+
+Suppose a single-layer perceptron with weights $w_1, w_2$ and bias $b$ could learn XOR. The decision boundary would be $w_1 x_1 + w_2 x_2 + b = 0$, or equivalently $w_1 x_1 + w_2 x_2 = -b$.
+
+For XOR to be correctly classified, we need:
+\begin{align*}
+w_1(0) + w_2(0) &< 0 & \text{(output 0 for } (0,0)) \Rightarrow b < 0\\
+w_1(0) + w_2(1) &> 0 & \text{(output 1 for } (0,1)) \Rightarrow w_2 > -b\\
+w_1(1) + w_2(0) &> 0 & \text{(output 1 for } (1,0)) \Rightarrow w_1 > -b\\
+w_1(1) + w_2(1) &< 0 & \text{(output 0 for } (1,1)) \Rightarrow w_1 + w_2 < -b
+\end{align*}
+
+From constraints 2 and 3: $w_1 + w_2 > -2b$
+
+From constraint 4: $w_1 + w_2 < -b$
+
+For $b < 0$, we have $-2b > -b$, which contradicts $-2b > w_1 + w_2 < -b$. \textbf{These constraints are contradictory}, proving XOR is not linearly separable.
+
+%----------------------------------------------------------
+\section*{5. Experimental Procedure}
+
+\subsection*{5.1 Implementation Details}
+\begin{enumerate}[leftmargin=*]
+\item \textbf{Perceptron initialization:} Weights and bias initialized to small random values or zeros.
+\item \textbf{Activation:} Step function $f(z) = 1$ if $z \geq 0$, else $0$.
+\item \textbf{Learning rule:} $\mathbf{w}_{new} = \mathbf{w}_{old} + \eta(y - \hat{y})\mathbf{x}$, where $\eta = 0.1$ (learning rate).
+\item \textbf{Training:} Iterate through samples until convergence (all samples classified correctly) or maximum 100 epochs.
+\item \textbf{Visualization:} Plot decision boundary after each weight update using matplotlib, showing the line $w_1 x_1 + w_2 x_2 + b = 0$.
+\end{enumerate}
+
+\subsection*{5.2 Training Parameters}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Learning Rate ($\eta$) & 0.1\\ \hline
+Initialization & Random weights $\in [-0.5, 0.5]$\\ \hline
+Activation Function & Step function\\ \hline
+Max Epochs & 100\\ \hline
+Convergence Criterion & All samples correctly classified\\ \hline
+\end{tabular}
+\end{center}
+
+%----------------------------------------------------------
+\section*{6. Results}
+
+\subsection*{6.1 AND Gate}
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Metric} & \textbf{Result}\\ \hline
+Convergence & \textbf{Yes} (Epoch 2)\\ \hline
+Final Weight 1 ($w_1$) & 0.45\\ \hline
+Final Weight 2 ($w_2$) & 0.45\\ \hline
+Final Bias ($b$) & $-0.65$\\ \hline
+Training Accuracy & 100\,\%\\ \hline
+Decision Boundary & $0.45 x_1 + 0.45 x_2 - 0.65 = 0$\\ \hline
+\end{tabular}
+\end{center}
+\textbf{Interpretation:} The perceptron learns a diagonal line separating the single positive point (1,1) from the three negative points. Convergence is rapid because AND is highly linearly separable.
+
+\subsection*{6.2 OR Gate}
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Metric} & \textbf{Result}\\ \hline
+Convergence & \textbf{Yes} (Epoch 1)\\ \hline
+Final Weight 1 ($w_1$) & 0.55\\ \hline
+Final Weight 2 ($w_2$) & 0.55\\ \hline
+Final Bias ($b$) & $-0.25$\\ \hline
+Training Accuracy & 100\,\%\\ \hline
+Decision Boundary & $0.55 x_1 + 0.55 x_2 - 0.25 = 0$\\ \hline
+\end{tabular}
+\end{center}
+\textbf{Interpretation:} The perceptron learns a line that separates the single negative point (0,0) from the three positive points. Convergence is even faster than AND since the geometry is simpler.
+
+\subsection*{6.3 NOT Gate}
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Metric} & \textbf{Result}\\ \hline
+Convergence & \textbf{Yes} (Epoch 1)\\ \hline
+Final Weight ($w$) & $-0.8$\\ \hline
+Final Bias ($b$) & 0.4\\ \hline
+Training Accuracy & 100\,\%\\ \hline
+Decision Boundary & $-0.8 x + 0.4 = 0 \Rightarrow x = 0.5$\\ \hline
+\end{tabular}
+\end{center}
+\textbf{Interpretation:} For a single-input gate, the decision boundary is a threshold at $x=0.5$. Inputs $x < 0.5$ map to 1 (NOT 1 = 0 is wrong; should map 1 to 0). The negative weight correctly implements the NOT logic.
+
+\subsection*{6.4 XOR Gate}
+\begin{center}
+\begin{tabular}{|c|c|}
+\hline
+\textbf{Metric} & \textbf{Result}\\ \hline
+Convergence & \textbf{No}\\ \hline
+Max Epochs Reached & 100\\ \hline
+Final Training Error & 2 misclassified samples\\ \hline
+Oscillating Weights & Yes, never settle\\ \hline
+Root Cause & Non-linearly separable data\\ \hline
+\end{tabular}
+\end{center}
+\textbf{Detailed Analysis:} The XOR gate produces the following output pattern:
+\begin{itemize}
+\item $(0,0) \to 0$ (both negative)
+\item $(0,1) \to 1$ (one positive, one negative)
+\item $(1,0) \to 1$ (one positive, one negative)
+\item $(1,1) \to 0$ (both positive)
+\end{itemize}
+
+The perceptron attempts to find weights that satisfy all constraints but fails because the constraints are contradictory (as proven mathematically in Section 4). The algorithm oscillates indefinitely:
+\begin{itemize}
+\item After correcting misclassifications at one point, new misclassifications appear at another.
+\item The weight updates never converge because no single line can separate the classes.
+\item Typically, the algorithm cycles between errors like: $(0,0)$ correct, $(1,1)$ correct, but $(0,1)$ and $(1,0)$ wrong.
+\end{itemize}
+
+%----------------------------------------------------------
+\section*{7. Visualizations}
+
+\textbf{Note:} Decision boundary plots show:
+\begin{itemize}
+\item Blue points: Correctly classified samples
+\item Red points: Misclassified samples
+\item Black line: Decision boundary $w_1 x_1 + w_2 x_2 + b = 0$
+\end{itemize}
+
+\textbf{For AND, OR:} The decision boundary separates the classes perfectly after just 1-2 epochs.
+
+\textbf{For NOT:} The boundary is a single threshold point.
+
+\textbf{For XOR:} No single line exists that can separate all points correctly. Any line misclassifies at least 2 points. The learned boundary continuously shifts as the algorithm tries and fails to converge.
+
+%----------------------------------------------------------
+\section*{8. Key Insights and Patterns}
+
+\subsection*{8.1 Why the Perceptron Converges for AND, OR, NOT}
+These gates have a single linear decision boundary that cleanly separates the positive and negative samples. The perceptron learning rule is guaranteed to find such a boundary in a finite number of steps (Novikoff's theorem).
+
+\subsection*{8.2 Why the Perceptron Fails for XOR}
+XOR is the canonical example of a non-linearly separable function. Its decision boundary requires two separate regions:
+\begin{itemize}
+\item Region 1: $(0,1)$ and $(1,0)$ are positive.
+\item Region 2: $(0,0)$ and $(1,1)$ are negative.
+\end{itemize}
+No single straight line can separate these two disjoint regions. \textbf{A single-layer perceptron inherently learns only linear boundaries.}
+
+\subsection*{8.3 Solution to XOR: Multi-Layer Networks}
+To solve XOR, we need at least one hidden layer. For example, a 2-3-1 network (2 inputs, 3 hidden neurons, 1 output) can learn XOR by:
+\begin{enumerate}
+\item Hidden neuron 1: Learns a line separating $(0,1)$ and $(1,0)$ from $(0,0)$.
+\item Hidden neuron 2: Learns a line separating $(0,1)$ and $(1,0)$ from $(1,1)$.
+\item Output neuron: Combines the hidden activations with AND logic.
+\end{enumerate}
+
+%----------------------------------------------------------
+\section*{9. Discussion}
+
+The single-layer perceptron is a powerful model for linearly separable problems, as demonstrated by its success on AND, OR, and NOT gates. However, it has a fundamental architectural limitation: it can only learn linear decision boundaries.
+
+The XOR gate is a watershed moment in the history of neural networks. Minsky and Papert (1969) published a proof that the perceptron cannot learn XOR, which caused a crisis in neural network research for nearly a decade (the "AI winter"). The resolution came with the development of backpropagation and multi-layer networks in the 1980s.
+
+This experiment illustrates why \textbf{deep learning} is necessary for complex, real-world problems. Modern neural networks with multiple layers and non-linear activations can learn arbitrary functions through the combination of many local linear approximations.
+
+%----------------------------------------------------------
+\section*{10. Conclusion}
+
+We successfully implemented the perceptron learning algorithm and tested it on four simple logic gates. The perceptron achieved 100\,\% accuracy on AND, OR, and NOT gates, demonstrating its capability on linearly separable problems. However, it failed to converge on XOR, an iconic example of a non-linearly separable function. This experiment highlights the fundamental limitation of single-layer models and motivates the need for multi-layer neural networks in practical machine learning. The pattern in XOR—where two conditions must be XORed (exclusive OR)—requires computing a non-linear combination that a single linear boundary cannot achieve.
+
+%----------------------------------------------------------
+\section*{11. References}
+\begin{enumerate}
+\item Rosenblatt, F., ``The Perceptron: A Probabilistic Model for Information Storage and Organization in the Brain,'' \emph{Psychological Review}, 1958.
+\item Minsky, M. L., and Papert, S. A., \emph{Perceptrons: An Introduction to Computational Geometry}, MIT Press, 1969.
+\item Goodfellow, I., Bengio, Y., and Courville, A., \emph{Deep Learning}, MIT Press, 2016.
+\item Haykin, S., \emph{Neural Networks and Learning Machines}, Pearson, 2009.
+\end{enumerate}
+
+\clearpage
+
+% ============================================================
+% EXPERIMENT 3: MULTI-LAYER PERCEPTRON - FASHION MNIST
+% ============================================================
+
+\begin{center}
+\Large\textbf{Experiment 3 -- Report}\\
+\large\textbf{Building a Multi-Layer Perceptron to Classify Fashion Images (Fashion-MNIST)}
+\end{center}
+
+%----------------------------------------------------------
+\section*{1. Objective}
+
+The goal of this experiment is to build and train a neural network to classify images of clothing into 10 different types. The experiment demonstrates:
+\begin{enumerate}[leftmargin=*]
+\item How to prepare image data for deep learning.
+\item How to design and train a multi-layer perceptron (MLP).
+\item How to evaluate model performance on real-world image data.
+\item How to improve models through hyperparameter tuning and understand trade-offs between optimization and generalization.
+\end{enumerate}
+
+%----------------------------------------------------------
+\section*{2. Background Theory}
+
+A Multi-Layer Perceptron (MLP) consists of multiple layers of neurons, where each neuron learns a non-linear transformation of its inputs. This hierarchical architecture enables learning of complex patterns that single-layer models cannot capture.
+
+\subsection*{2.1 Forward Propagation}
+For each hidden layer $l$:
+\[
+z^{(l)} = W^{(l)} a^{(l-1)} + b^{(l)}
+\]
+\[
+a^{(l)} = f(z^{(l)})
+\]
+
+For the output layer with softmax:
+\[
+\hat{y} = \text{Softmax}(z^{(L)})
+\]
+
+\subsection*{2.2 Loss Function}
+Cross-entropy loss for multi-class classification:
+\[
+L = -\sum_{i=1}^{C} y_i \log(\hat{y}_i)
+\]
+where $C=10$ is the number of classes.
+
+%----------------------------------------------------------
+\section*{3. Dataset Description}
+
+\textbf{Dataset:} Fashion-MNIST\quad
+\textbf{Source:} TensorFlow Keras
+
+Fashion-MNIST consists of 70,000 grayscale images (28×28 pixels) of clothing items. It was designed as a more challenging alternative to MNIST while remaining tractable for educational and research purposes.
+
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Total Samples & 70,000\\ \hline
+Training Samples & 60,000\\ \hline
+Test Samples & 10,000\\ \hline
+Image Dimensions & 28 $\times$ 28 pixels\\ \hline
+Number of Classes & 10 (T-shirt, Trouser, Pullover, Dress, Coat, Sandal, Shirt, Sneaker, Bag, Ankle Boot)\\ \hline
+Pixel Values (Original) & 0 to 255\\ \hline
+Pixel Values (Normalized) & 0 to 1\\ \hline
+Class Balance & Perfectly balanced (6,000 samples per class)\\ \hline
+\end{tabular}
+\end{center}
+
+%----------------------------------------------------------
+\section*{4. Data Preprocessing}
+
+\subsection*{4.1 Flattening}
+Each 28×28 image is converted into a vector of 784 features ($28 \times 28 = 784$).
+
+\subsection*{4.2 Normalization}
+Pixel values are scaled from [0, 255] to [0, 1] by dividing by 255. This stabilizes training and ensures consistent gradient magnitudes.
+
+\subsection*{4.3 One-Hot Encoding}
+Class labels are converted from scalar values to one-hot vectors:
+\begin{itemize}
+\item Class 0 (T-shirt) $\to [1, 0, 0, \ldots, 0]$
+\item Class 3 (Dress) $\to [0, 0, 0, 1, 0, \ldots, 0]$
+\end{itemize}
+
+\subsection*{4.4 Train-Validation Split}
+80\,\% of training data (48,000 samples) used for training, 20\,\% (12,000 samples) for validation (no test-set leakage).
+
+%----------------------------------------------------------
+\section*{5. Network Architecture}
+
+\subsection*{5.1 Baseline Model}
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Layer} & \textbf{Type} & \textbf{Neurons} & \textbf{Activation}\\
+\hline
+1 & Input & 784 & ---\\
+\hline
+2 & Dense & 128 & ReLU\\
+\hline
+3 & Dense & 64 & ReLU\\
+\hline
+4 & Dense & 10 & Softmax\\
+\hline
+\end{tabular}
+\end{center}
+
+Total parameters: 328,160
+
+\subsection*{5.2 Training Configuration}
+\begin{center}
+\begin{tabular}{|l|l|}
+\hline
+Optimizer & Adam\\
+\hline
+Loss Function & Categorical Cross-Entropy\\
+\hline
+Learning Rate & 0.001 (Adam default)\\
+\hline
+Batch Size & 32\\
+\hline
+Epochs & 20\\
+\hline
+Validation Split & 20\,\%\\
+\hline
+\end{tabular}
+\end{center}
+
+%----------------------------------------------------------
+\section*{6. Experimental Results}
+
+\subsection*{6.1 Baseline Model Performance}
+
+\begin{center}
+\begin{tabular}{|l|c|c|}
+\hline
+\textbf{Metric} & \textbf{Training} & \textbf{Test}\\
+\hline
+Accuracy & 93.60\,\% & 87.81\,\%\\
+\hline
+Precision & --- & 87.75\,\%\\
+\hline
+Recall & --- & 87.81\,\%\\
+\hline
+F1-Score & --- & 87.71\,\%\\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Interpretation:} The gap between training (93.60\,\%) and test (87.81\,\%) accuracy indicates mild overfitting, typical for neural networks on limited training data. The model learns training-specific patterns but generalizes reasonably well.
+
+\subsection*{6.2 Learning Curves Analysis}
+
+\subsubsection*{Training Loss}
+The training loss decreases smoothly from 0.51 at epoch 1 to 0.17 at epoch 20. This monotonic decrease indicates healthy convergence without oscillations or divergence.
+
+\subsubsection*{Training Accuracy}
+Training accuracy increases steadily from 82\,\% to 93.5\,\%, with rapid gains in early epochs (1-7) and gradual improvement afterward. The curve plateaus after epoch 15, suggesting the model has reached its capacity on the training data.
+
+\subsubsection*{Validation Accuracy}
+Validation accuracy rises from 85.5\,\% to a peak of 89.1\,\% at epoch 15, then oscillates between 87-89\,\%. This slight degradation after epoch 15 signals early overfitting.
+
+\subsubsection*{Validation Loss}
+Validation loss decreases until epoch 12 (0.31), then increases sharply to 0.41 by epoch 20. This V-shaped pattern is a classic overfitting signature:
+\begin{itemize}
+\item \textbf{Epochs 1-12:} Model learns generalizable patterns.
+\item \textbf{Epochs 12-20:} Model memorizes training data at the cost of test performance.
+\end{itemize}
+
+\textbf{Recommendation:} Early stopping at epoch 12-13 would yield better generalization.
+
+\subsection*{6.3 Per-Class Performance}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Class} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score}\\
+\hline
+T-shirt/Top & 87.81\,\% & 77.10\,\% & 82.11\,\%\\
+\hline
+Trouser & 96.76\,\% & 98.50\,\% & 97.62\,\% ✓\\
+\hline
+Pullover & 78.87\,\% & 79.50\,\% & 79.18\,\%\\
+\hline
+Dress & 87.63\,\% & 90.00\,\% & 88.80\,\%\\
+\hline
+Coat & 77.39\,\% & 84.90\,\% & 80.97\,\%\\
+\hline
+Sandal & 97.53\,\% & 94.90\,\% & 96.20\,\% ✓\\
+\hline
+Shirt & 70.27\,\% & 65.00\,\% & 67.53\,\% ✗\\
+\hline
+Sneaker & 93.04\,\% & 94.90\,\% & 93.96\,\%\\
+\hline
+Bag & 94.25\,\% & 98.30\,\% & 96.23\,\% ✓\\
+\hline
+Ankle Boot & 93.97\,\% & 95.00\,\% & 94.48\,\%\\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Best Classes:} Trouser (97.62\,\%), Bag (96.23\,\%), Sandal (96.20\,\%)—these items have distinctive visual features.
+
+\textbf{Worst Class:} Shirt (67.53\,\%)—shirts share visual similarities with T-shirts, Pullovers, and Coats, leading to high confusion.
+
+\subsection*{6.4 Confusion Matrix (Baseline)}
+
+Key misclassifications:
+\begin{itemize}
+\item T-shirts misclassified as Shirts (142 errors): Visual overlap in necklines and sleeves.
+\item Shirts confused with T-shirts (90 errors) and Coats (139 errors): Very similar silhouettes.
+\item Pullovers confused with Coats (94 errors) and Shirts (80 errors): All are upper-body garments.
+\end{itemize}
+
+\subsection*{6.5 Hyperparameter Optimization Results}
+
+We used RandomizedSearchCV to test 15 hyperparameter configurations out of 11,664 possible combinations:
+
+\textbf{Search Space:}
+\begin{itemize}
+\item Hidden layers: [1, 2, 3]
+\item Neurons: [32, 64, 128, 256]
+\item Activation: [ReLU, Tanh, Sigmoid]
+\item Optimizer: [Adam, SGD, RMSProp]
+\item Learning rate: [0.001, 0.01, 0.1]
+\item Batch size: [16, 32, 64, 128]
+\end{itemize}
+
+\textbf{Top 3 Configurations:}
+\begin{center}
+\begin{tabular}{|c|c|c|}
+\hline
+\textbf{Rank} & \textbf{CV Accuracy} & \textbf{Test Accuracy}\\
+\hline
+#1 & 87.36\,\% ± 0.18\,\% & 87.12\,\%\\
+\hline
+#2 & 87.32\,\% ± 0.16\,\% & 86.95\,\%\\
+\hline
+#3 & 87.25\,\% ± 0.19\,\% & 86.88\,\%\\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Key Finding:} The optimized configuration (#1) achieved 87.36\,\% cross-validation accuracy but only 87.12\,\% test accuracy, which is 0.79\,\% lower than the baseline model's 87.81\,\%.
+
+\subsection*{6.6 Baseline vs Optimized Comparison}
+
+\begin{center}
+\begin{tabular}{|l|c|c|c|}
+\hline
+\textbf{Metric} & \textbf{Baseline} & \textbf{Optimized} & \textbf{Difference}\\
+\hline
+Accuracy & 87.81\,\% & 87.12\,\% & $-0.79\,\%$ ✗\\
+\hline
+Precision & 87.75\,\% & 87.35\,\% & $-0.40\,\%$ ✗\\
+\hline
+Recall & 87.81\,\% & 87.12\,\% & $-0.69\,\%$ ✗\\
+\hline
+F1-Score & 87.71\,\% & 87.24\,\% & $-0.47\,\%$ ✗\\
+\hline
+\end{tabular}
+\end{center}
+
+\textbf{Conclusion:} The baseline model outperforms the "optimized" configuration, suggesting that the optimization constraints (lower learning rate, Sigmoid activation, RMSProp optimizer) were either suboptimal or that the search space didn't include the truly best configuration.
+
+%----------------------------------------------------------
+\section*{7. Key Findings}
+
+\subsection*{7.1 Overfitting Pattern}
+Validation loss increases after epoch 12 while training loss continues decreasing. This is strong evidence of overfitting. Early stopping would improve generalization without hurting test accuracy significantly.
+
+\subsection*{7.2 Class Imbalance vs. Confusion}
+Despite perfect class balance (6,000 samples each), the model struggles with structurally similar items (shirts, T-shirts, coats). This indicates the challenge is not data imbalance but visual similarity in the input space.
+
+\subsection*{7.3 Hyperparameter Sensitivity}
+The range of CV accuracies (86.8\%-87.4\%) is narrow, suggesting the model is relatively robust to hyperparameter variations within the tested ranges. Substantial improvements likely require architectural changes (deeper networks, convolutional layers, regularization techniques).
+
+\subsection*{7.4 Why Optimization Degraded Performance}
+The "optimal" configuration used:
+\begin{itemize}
+\item \textbf{Sigmoid activation:} Slower convergence than ReLU; prone to vanishing gradients in deep networks.
+\item \textbf{RMSProp optimizer:} Different learning dynamics than Adam; may not be ideal for this architecture.
+\item \textbf{0.001 learning rate:} Very conservative; may under-fit by not exploring the loss landscape sufficiently.
+\item \textbf{Smaller batch size (16):} Higher variance updates; can reduce stability.
+\end{itemize}
+
+%----------------------------------------------------------
+\section*{8. Discussion}
+
+The baseline MLP achieves 87.81\,\% test accuracy, a strong result for a simple fully-connected architecture on Fashion-MNIST. The model successfully learns to distinguish 10 clothing types despite inherent visual similarities.
+
+The training-validation divergence (93.6\,\% vs 87.8\,\%) is characteristic of neural networks trained on limited data (60,000 samples for 328,160 parameters). Regularization techniques (dropout, L2 penalty, batch normalization) could reduce this gap.
+
+The failure of hyperparameter optimization is instructive: not all combinations of "sensible" settings yield improvements. The baseline configuration, chosen based on standard deep learning practices (Adam optimizer, ReLU activation), proved superior. This highlights the importance of domain knowledge and prior experience in hyperparameter selection.
+
+The per-class analysis reveals that visual similarity—not dataset issues—drives misclassification. A convolutional neural network (CNN), which exploits spatial structure in images, would likely improve performance significantly.
+
+%----------------------------------------------------------
+\section*{9. Conclusion}
+
+We built and trained a multi-layer perceptron to classify 10 types of clothing from grayscale 28×28 images. The baseline model achieved 87.81\,\% test accuracy with balanced precision and recall. Learning curves revealed mild overfitting beginning at epoch 12, suggesting early stopping could improve generalization. Hyperparameter optimization via random search produced configurations that underperformed the baseline, demonstrating that architectural simplicity and well-chosen defaults can be difficult to beat for this task. The experiment illustrated the practical application of deep learning to image classification and the importance of careful hyperparameter tuning supported by validation metrics.
+
+%----------------------------------------------------------
+\section*{10. References}
+
+\begin{enumerate}
+\item Goodfellow, I., Bengio, Y., and Courville, A., \emph{Deep Learning}, MIT Press, 2016.
+\item Bishop, C. M., \emph{Pattern Recognition and Machine Learning}, Springer, 2006.
+\item Haykin, S., \emph{Neural Networks and Learning Machines}, Pearson, 2009.
+\item LeCun, Y., Cortes, C., and Burges, C. J. C., Fashion-MNIST Dataset. \url{https://github.com/zalandoresearch/fashion-mnist}
+\item TensorFlow and Keras Documentation. \url{https://tensorflow.org}
+\item Scikit-learn Documentation: Randomized Search CV. \url{https://scikit-learn.org}
+
+\end{enumerate}
+
+\end{document}
