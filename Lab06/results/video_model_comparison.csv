@@ -1,0 +1,3 @@
+model,Accuracy (%),Macro Precision (%),Macro Recall (%),Macro F1 (%),Parameters,Training Time (s)
+video_cnn_lstm,100.0,100.0,100.0,100.0,168229,7.910281419754028
+video_cnn_gru,100.0,100.0,100.0,100.0,126309,8.081425666809082

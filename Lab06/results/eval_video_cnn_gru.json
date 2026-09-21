@@ -1,0 +1,1 @@
+{"model": "video_cnn_gru", "accuracy": 100.0, "precision": 100.0, "recall": 100.0, "f1": 100.0, "params": 126309, "train_time_s": 8.081425666809082, "y_pred": [2, 4, 0, 2, 0, 3, 1, 3]}

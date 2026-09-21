@@ -1,0 +1,2 @@
+Task,Token Accuracy (%),Sequence Accuracy (%),Final Train Loss,Final Val Loss
+Sequence-to-sequence reversal,98.5,97.66666666666667,0.0314673632383346,0.0403676144778728
