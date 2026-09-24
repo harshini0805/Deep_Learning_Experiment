@@ -25,12 +25,3 @@ jupyter notebook Experiment_6_RNN_LSTM_GRU_2.ipynb
 ```
 
 If you re-run the video cells, delete `results/eval_video_*.json` first (or use `force=True`), otherwise cached predictions from an earlier run are reused.
-
-## Building the report
-
-Upload `Experiment_61.tex` and the `images/` folder to Overleaf (pdfLaTeX), or run `pdflatex Experiment_61.tex` twice.
-
-## Notes
-
-- `additional_exercises/code/` uses hard-coded workspace paths; edit the data paths before running.
-- Exercise results are mean ± s.d. over 3 seeds (42, 43, 44).
